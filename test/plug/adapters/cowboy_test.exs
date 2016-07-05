@@ -16,7 +16,7 @@ defmodule Plug.Adapters.CowboyTest do
            [Plug.Adapters.CowboyTest.HTTP,
             100,
             [port: 4000, max_connections: 16384],
-            [env: [dispatch: @dispatch]]]
+            %{env: %{dispatch: @dispatch}}]
   end
 
   test "builds args with custom options" do
@@ -24,7 +24,7 @@ defmodule Plug.Adapters.CowboyTest do
            [Plug.Adapters.CowboyTest.HTTP,
             25,
             [max_connections: 16384, port: 3000, other: true],
-            [env: [dispatch: @dispatch]]]
+            %{env: %{dispatch: @dispatch}}]
   end
 
   test "builds args with protocol option" do
@@ -32,13 +32,13 @@ defmodule Plug.Adapters.CowboyTest do
            [Plug.Adapters.CowboyTest.HTTP,
             25,
             [max_connections: 16384, port: 3000],
-            [env: [dispatch: @dispatch], compress: true, timeout: 30000]]
+            %{env: %{dispatch: @dispatch}, compress: true, timeout: 30000}]
 
     assert args(:http, __MODULE__, [], [port: 3000, acceptors: 25, protocol_options: [timeout: 30000]]) ==
            [Plug.Adapters.CowboyTest.HTTP,
             25,
             [max_connections: 16384, port: 3000],
-            [env: [dispatch: @dispatch], timeout: 30000]]
+            %{env: %{dispatch: @dispatch}, timeout: 30000}]
   end
 
   test "builds args with single-atom protocol option" do
@@ -46,7 +46,7 @@ defmodule Plug.Adapters.CowboyTest do
            [Plug.Adapters.CowboyTest.HTTP,
             25,
             [:inet6, max_connections: 16384, port: 3000],
-            [env: [dispatch: @dispatch]]]
+            %{env: %{dispatch: @dispatch}}]
   end
 
   test "builds child specs" do
@@ -55,7 +55,7 @@ defmodule Plug.Adapters.CowboyTest do
             :ranch_tcp,
             [port: 4000, max_connections: 16384],
             :cowboy_protocol,
-            [env: [dispatch: @dispatch]]]
+            %{env: %{dispatch: @dispatch}}]
 
     assert child_spec(:http, __MODULE__, [], []) ==
            {{:ranch_listener_sup, Plug.Adapters.CowboyTest.HTTP},
