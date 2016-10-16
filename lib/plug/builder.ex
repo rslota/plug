@@ -71,7 +71,7 @@ defmodule Plug.Builder do
         plug Plug.Logger
         plug Plug.Head
 
-        def call(conn, _opts) do
+        def call(conn, opts) do
           super(conn, opts) # calls Plug.Logger and Plug.Head
           assign(conn, :called_all_plugs, true)
         end
@@ -127,10 +127,6 @@ defmodule Plug.Builder do
   defmacro __before_compile__(env) do
     plugs        = Module.get_attribute(env.module, :plugs)
     builder_opts = Module.get_attribute(env.module, :plug_builder_opts)
-
-    if plugs == [] do
-      raise "no plugs have been defined in #{inspect env.module}"
-    end
 
     {conn, body} = Plug.Builder.compile(env, plugs, builder_opts)
 
@@ -219,17 +215,31 @@ defmodule Plug.Builder do
       :function -> "expected #{plug}/2 to return a Plug.Conn"
     end <> ", all plugs must receive a connection (conn) and return a connection"
 
-    quote do
-      case unquote(compile_guards(call, guards)) do
-        %Plug.Conn{halted: true} = conn ->
-          unquote(log_halt(plug_type, plug, env, builder_opts))
-          conn
-        %Plug.Conn{} = conn ->
-          unquote(acc)
-        _ ->
-          raise unquote(error_message)
+    {fun, meta, [arg, [do: clauses]]} =
+      quote do
+        case unquote(compile_guards(call, guards)) do
+          %Plug.Conn{halted: true} = conn ->
+            unquote(log_halt(plug_type, plug, env, builder_opts))
+            conn
+          %Plug.Conn{} = conn ->
+            unquote(acc)
+          _ ->
+            raise unquote(error_message)
+        end
       end
-    end
+
+    generated? = :erlang.system_info(:otp_release) >= '19'
+
+    clauses =
+      Enum.map(clauses, fn {:->, meta, args} ->
+        if generated? do
+          {:->, [generated: true] ++ meta, args}
+        else
+          {:->, Keyword.put(meta, :line, -1), args}
+        end
+      end)
+
+    {fun, meta, [arg, [do: clauses]]}
   end
 
   defp quote_plug_call(:function, plug, opts) do

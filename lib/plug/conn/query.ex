@@ -181,13 +181,18 @@ defmodule Plug.Conn.Query do
 
   # covers keyword lists
   defp encode_pair(parent_field, list, encoder) when is_list(list) and is_tuple(hd(list)) do
-    encode_kv(Enum.uniq(list, &elem(&1, 0)), parent_field, encoder)
+    encode_kv(Enum.uniq_by(list, &elem(&1, 0)), parent_field, encoder)
   end
 
   # covers non-keyword lists
   defp encode_pair(parent_field, list, encoder) when is_list(list) do
-    prune Enum.flat_map list, fn value ->
-      [?&, encode_pair(parent_field <> "[]", value, encoder)]
+    prune Enum.flat_map list, fn
+      value when is_map(value) and map_size(value) != 1 ->
+        raise ArgumentError,
+          "cannot encode maps inside lists when the map has 0 or more than 1 elements, " <>
+          "got: #{inspect(value)}"
+      value ->
+        [?&, encode_pair(parent_field <> "[]", value, encoder)]
     end
   end
 

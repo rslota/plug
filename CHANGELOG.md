@@ -1,9 +1,32 @@
 ## Changelog
 
-## v1.2.0-dev
+## v1.2.2
+
+* Bug fix
+  * Do not generate AST with line -1 on OTP >= 19
+
+## v1.2.1
+
+* Enhancements
+  * Raise proper bad request and timeout exceptions on parse errors
+  * Support environment hosts on Plug.SSL
+  * Do not raise when nothing is plugged in a Plug.Builder
+
+## v1.2.0
+
+* Enhancements
+  * Introduce new error page
+  * Set default max connections to 16k instead of 1k
+
+* Bug fixes
+  * Ensure that `Plug.Conn`'s public API is consistent about not sending empty chunks
+
+* Deprecations
+  * Use the new `MIME` project instead of `Plug.MIME`
+  * Introduce safer algorithms in `Plug.MessageEncryptor` and `Plug.MessageVerifier`. The previous ones will be supported for a year allowing safe migration.
 
 * Backwards incompatible changes
-  * Depend on Elixir ~> 1.2
+  * Depend on Elixir ~> 1.2.3 or ~> 1.3
 
 ## v1.1.4
 

@@ -2,7 +2,7 @@ defmodule Plug.SSL do
   @moduledoc """
   A plug to force SSL connections.
 
-  If the scheme of a request is https, it'll add a `strict-transport-security`
+  If the scheme of a request is `https`, it'll add a `strict-transport-security`
   header to enable HTTP Strict Transport Security.
 
   Otherwise, the request will be redirected to a corresponding location
@@ -13,20 +13,20 @@ defmodule Plug.SSL do
   ## x-forwarded-proto
 
   If your Plug application is behind a proxy that handles HTTPS, you will
-  need to tell Plug to parse the proper protocol from the "x-forwarded-proto"
+  need to tell Plug to parse the proper protocol from the `x-forwarded-proto`
   header. This can be done using the `:rewrite_on` option:
 
       plug Plug.SSL, rewrite_on: [:x_forwarded_proto]
 
   The command above will effectively change the value of `conn.scheme` by
-  the one sent in "x-forwarded-proto".
+  the one sent in `x-forwarded-proto`.
 
-  Since rewriting the scheme based on "x-forwarded-proto" can open up
+  Since rewriting the scheme based on `x-forwarded-proto` can open up
   security vulnerabilities, only provide the option above if:
 
-      * Your app is behind a proxy
-      * Your proxy strips "x-forwarded-proto" headers from all incoming requests
-      * Your proxy sets the "x-forwarded-proto" and sends it to Plug
+    * your app is behind a proxy
+    * your proxy strips `x-forwarded-proto` headers from all incoming requests
+    * your proxy sets the `x-forwarded-proto` and sends it to Plug
 
   ## Options
 
@@ -35,7 +35,8 @@ defmodule Plug.SSL do
     * `:expires` - seconds to expires for HSTS, defaults to 31536000 (a year).
     * `:subdomains` - a boolean on including subdomains or not in HSTS,
       defaults to false.
-    * `:host` - a new host to redirect to if the request's scheme is `http`.
+    * `:host` - a new host to redirect to if the request's scheme is `http`,
+      defaults to `conn.host`.
 
   ## Port
 
@@ -94,7 +95,7 @@ defmodule Plug.SSL do
   defp redirect_to_https(%Conn{host: host} = conn, custom_host) do
     status = if conn.method in ~w(HEAD GET), do: 301, else: 307
 
-    location = "https://" <> (custom_host || host) <>
+    location = "https://" <> host(custom_host, host) <>
                              conn.request_path <> qs(conn.query_string)
 
     conn
@@ -102,6 +103,10 @@ defmodule Plug.SSL do
     |> send_resp(status, "")
     |> halt
   end
+
+  defp host(nil, host), do: host
+  defp host({:system, env}, host), do: host(System.get_env(env), host)
+  defp host(host, _) when is_binary(host), do: host
 
   defp qs(""), do: ""
   defp qs(qs), do: "?" <> qs

@@ -1,12 +1,12 @@
 defmodule Plug.Mixfile do
   use Mix.Project
 
-  @version "1.2.0-dev"
+  @version "1.2.2"
 
   def project do
     [app: :plug,
      version: @version,
-     elixir: "~> 1.2",
+     elixir: "~> 1.2.3 or ~> 1.3",
      deps: deps(),
      package: package(),
      description: "A specification and conveniences for composable " <>

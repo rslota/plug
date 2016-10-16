@@ -138,14 +138,14 @@ defmodule Plug.Router do
   This opens up a few possibilities. First, guards can be given
   to `match`:
 
-      match "/foo/:bar" when size(bar) <= 3, via: :get do
+      match "/foo/bar/:baz" when size(baz) <= 3, via: :get do
         send_resp(conn, 200, "hello world")
       end
 
   Second, a list of split paths (which is the compiled result) is
   also allowed:
 
-      match ["foo", bar], via: :get do
+      match ["foo", "bar", baz], via: :get do
         send_resp(conn, 200, "hello world")
       end
 
@@ -210,6 +210,8 @@ defmodule Plug.Router do
     * `:host` - the host which the route should match. Defaults to `nil`,
       meaning no host match, but can be a string like "example.com" or a
       string ending with ".", like "subdomain." for a subdomain match.
+
+    * `:private` - assigns values to `conn.private` for use in the match
 
     * `:via` - matches the route against some specific HTTP method (specified as
       an atom, like `:get` or `:put`.
@@ -282,6 +284,7 @@ defmodule Plug.Router do
     * `:to` - a Plug the requests will be forwarded to.
     * `:host` - a string representing the host or subdomain, exactly like in
       `match/3`.
+    * `:private` - values for `conn.private`, exactly like in `match/3`.
 
   All remaining options are passed to the target plug.
 
