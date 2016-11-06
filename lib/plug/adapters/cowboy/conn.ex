@@ -34,6 +34,7 @@ defmodule Plug.Adapters.Cowboy.Conn do
 
   def send_resp(req, status, headers, body) do
     headers = to_headers_map(headers)
+    status = Integer.to_string(status) <> " " <> Plug.Conn.Status.reason_phrase(status)
     :ok = Request.reply(status, headers, body, req)
     {:ok, nil, req}
   end

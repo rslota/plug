@@ -31,6 +31,15 @@ defmodule Plug.ParsersTest do
     assert conn.params["params"] == "baz"
   end
 
+  test "parsing prefers path params over body params" do
+    conn = %{conn(:post, "/", "foo=body") | params: %{"foo" => "bar"},
+             path_params: %{"foo" => "path"}}
+    conn = conn
+           |> put_req_header("content-type", "application/x-www-form-urlencoded")
+           |> parse()
+    assert conn.params["foo"] == "path"
+  end
+
   test "parsing prefers body params over query params with existing params" do
     conn = %{conn(:post, "/?foo=query", "foo=body") | params: %{"foo" => "params"}}
     conn = conn
@@ -115,6 +124,7 @@ defmodule Plug.ParsersTest do
       |> put_req_header("content-type", "text/plain")
       |> parse(pass: ["*/*"])
     assert conn.params["foo"] == "bar"
+    assert conn.body_params == %Plug.Conn.Unfetched{aspect: :body_params}
   end
 
   test "does not raise when request cannot be processed if mime accepted" do
@@ -123,12 +133,14 @@ defmodule Plug.ParsersTest do
       |> put_req_header("content-type", "text/plain")
       |> parse(pass: ["text/plain", "application/json"])
     assert conn.params["foo"] == "bar"
+    assert conn.body_params == %Plug.Conn.Unfetched{aspect: :body_params}
 
     conn =
       conn(:post, "/?foo=bar", "foo=baz")
       |> put_req_header("content-type", "application/json")
       |> parse(pass: ["text/plain", "application/json"])
     assert conn.params["foo"] == "bar"
+    assert conn.body_params == %Plug.Conn.Unfetched{aspect: :body_params}
   end
 
   test "does not raise when request cannot be processed if accepts mime range" do
@@ -137,5 +149,6 @@ defmodule Plug.ParsersTest do
       |> put_req_header("content-type", "text/plain")
       |> parse(pass: ["text/plain", "text/*"])
     assert conn.params["foo"] == "bar"
+    assert conn.body_params == %Plug.Conn.Unfetched{aspect: :body_params}
   end
 end
