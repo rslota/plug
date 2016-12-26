@@ -32,7 +32,7 @@ defmodule Plug.Adapters.CowboyTest do
            [Plug.Adapters.CowboyTest.HTTP,
             25,
             [:inet6, {:raw, 1, 2, 3}, max_connections: 16384, port: 3000, other: true],
-            [env: [dispatch: @dispatch]]]
+            %{env: %{dispatch: @dispatch}}]
   end
 
   test "builds args with protocol option" do
