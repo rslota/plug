@@ -2,16 +2,14 @@ defmodule Plug.Adapters.Cowboy.Conn do
   @behaviour Plug.Conn.Adapter
   @moduledoc false
 
-  alias :cowboy_req, as: Request
-
   def conn(req) do
-    path = Request.path req
-    host = Request.host req
-    port = Request.port req
-    meth = Request.method req
-    hdrs = Request.headers req
-    qs   = Request.qs req
-    peer = Request.peer req
+    path = :cowboy_req.path req
+    host = :cowboy_req.host req
+    port = :cowboy_req.port req
+    meth = :cowboy_req.method req
+    hdrs = :cowboy_req.headers req
+    qs   = :cowboy_req.qs req
+    peer = :cowboy_req.peer req
     {remote_ip, _} = peer
 
     req = Map.put(req, :plug_read_body, false)
@@ -28,14 +26,14 @@ defmodule Plug.Adapters.Cowboy.Conn do
       query_string: qs,
       req_headers: to_headers_list(hdrs),
       request_path: path,
-      scheme: String.to_atom(Request.scheme(req))
+      scheme: String.to_atom(:cowboy_req.scheme(req))
    }
   end
 
   def send_resp(req, status, headers, body) do
     headers = to_headers_map(headers)
     status = Integer.to_string(status) <> " " <> Plug.Conn.Status.reason_phrase(status)
-    :ok = Request.reply(status, headers, body, req)
+    :ok = :cowboy_req.reply(status, headers, body, req)
     {:ok, nil, req}
   end
 
@@ -52,23 +50,23 @@ defmodule Plug.Adapters.Cowboy.Conn do
 
     headers = to_headers_map(headers)
 
-    :ok = Request.reply(status, headers, body, req)
+    :ok = :cowboy_req.reply(status, headers, body, req)
     {:ok, nil, req}
   end
 
   def send_chunked(req, status, headers) do
     headers = to_headers_map(headers)
-    req = Request.chunked_reply(status, headers, req)
+    req = :cowboy_req.chunked_reply(status, headers, req)
     {:ok, nil, req}
   end
 
   def chunk(req, body) do
-    Request.chunk(body, req)
+    :cowboy_req.chunk(body, req)
   end
 
   def read_req_body(req, opts \\ [])
   def read_req_body(req = %{plug_read_body: false}, opts) do
-    Request.read_body(%{req | plug_read_body: true}, opts)
+    :cowboy_req.read_body(%{req | plug_read_body: true}, opts)
   end
   def read_req_body(req, _opts) do
     {:ok, "", req}
@@ -79,7 +77,13 @@ defmodule Plug.Adapters.Cowboy.Conn do
     # otherwise cowboy will attempt to load the
     # whole length at once.
     {limit, opts} = Keyword.pop(opts, :length, 8_000_000)
-    {:ok, limit, acc, req} = parse_multipart(Request.part(req), limit, opts, [], callback)
+
+    # We need to construct the header opts using defaults here,
+    # since once opts are passed cowboy defaults are not applied anymore.
+    {headers_opts, opts} = Keyword.pop(opts, :headers, [])
+    headers_opts = headers_opts ++ [length: 64_000, read_length:  64_000, read_timeout: 5000]
+
+    {:ok, limit, acc, req} = parse_multipart(:cowboy_req.part(req, headers_opts), limit, opts, headers_opts, [], callback)
 
     params = Enum.reduce(acc, %{}, &Plug.Conn.Query.decode_pair/2)
 
@@ -115,39 +119,42 @@ defmodule Plug.Adapters.Cowboy.Conn do
 
   ## Multipart
 
-  defp parse_multipart({:ok, headers, req}, limit, opts, acc, callback) when limit >= 0 do
+  defp parse_multipart({:ok, headers, req}, limit, opts, headers_opts, acc, callback) when limit >= 0 do
     case callback.(headers) do
       {:binary, name} ->
         {:ok, limit, body, req} =
-          parse_multipart_body(Request.part_body(req, opts), limit, opts, "")
+          parse_multipart_body(:cowboy_req.part_body(req, opts), limit, opts, "")
 
         Plug.Conn.Utils.validate_utf8!(body, Plug.Parsers.BadEncodingError, "multipart body")
-        parse_multipart(Request.part(req), limit, opts, [{name, body}|acc], callback)
+        parse_multipart(:cowboy_req.part(req, headers_opts), limit, opts, headers_opts,
+                        [{name, body}|acc], callback)
 
       {:file, name, path, %Plug.Upload{} = uploaded} ->
         {:ok, file} = File.open(path, [:write, :binary, :delayed_write, :raw])
 
         {:ok, limit, req} =
-          parse_multipart_file(Request.part_body(req, opts), limit, opts, file)
+          parse_multipart_file(:cowboy_req.part_body(req, opts), limit, opts, file)
 
         :ok = File.close(file)
-        parse_multipart(Request.part(req), limit, opts, [{name, uploaded}|acc], callback)
+        parse_multipart(:cowboy_req.part(req, headers_opts), limit, opts, headers_opts,
+                        [{name, uploaded}|acc], callback)
 
       :skip ->
-        parse_multipart(Request.part(req), limit, opts, acc, callback)
+        parse_multipart(:cowboy_req.part(req, headers_opts), limit, opts, headers_opts,
+                        acc, callback)
     end
   end
 
-  defp parse_multipart({:ok, _headers, req}, limit, _opts, acc, _callback) do
+  defp parse_multipart({:ok, _headers, req}, limit, _opts, _headers_opts, acc, _callback) do
     {:ok, limit, acc, req}
   end
 
-  defp parse_multipart({:done, req}, limit, _opts, acc, _callback) do
+  defp parse_multipart({:done, req}, limit, _opts, _headers_opts, acc, _callback) do
     {:ok, limit, acc, req}
   end
 
   defp parse_multipart_body({:more, tail, req}, limit, opts, body) when limit >= byte_size(tail) do
-    parse_multipart_body(Request.part_body(req, opts), limit - byte_size(tail), opts, body <> tail)
+    parse_multipart_body(:cowboy_req.part_body(req, opts), limit - byte_size(tail), opts, body <> tail)
   end
 
   defp parse_multipart_body({:more, tail, req}, limit, _opts, body) do
@@ -164,7 +171,7 @@ defmodule Plug.Adapters.Cowboy.Conn do
 
   defp parse_multipart_file({:more, tail, req}, limit, opts, file) when limit >= byte_size(tail) do
     IO.binwrite(file, tail)
-    parse_multipart_file(Request.part_body(req, opts), limit - byte_size(tail), opts, file)
+    parse_multipart_file(:cowboy_req.part_body(req, opts), limit - byte_size(tail), opts, file)
   end
 
   defp parse_multipart_file({:more, tail, req}, limit, _opts, _file) do

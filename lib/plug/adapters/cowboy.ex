@@ -14,7 +14,7 @@ defmodule Plug.Adapters.Cowboy do
     Defaults to 100.
 
   * `:max_connections` - max number of connections supported.
-    Defaults to `16384`.
+    Defaults to `16_384`.
 
   * `:dispatch` - manually configure Cowboy's dispatch.
     If this option is used, the given plug won't be initialized
@@ -39,12 +39,15 @@ defmodule Plug.Adapters.Cowboy do
   # Made public with @doc false for testing.
   @doc false
   def args(scheme, plug, opts, cowboy_options) do
+    {cowboy_options, non_keyword_options} =
+      Enum.partition(cowboy_options, &is_tuple(&1) and tuple_size(&1) == 2)
+
     cowboy_options
-    |> Keyword.put_new(:max_connections, 16384)
+    |> Keyword.put_new(:max_connections, 16_384)
     |> Keyword.put_new(:ref, build_ref(plug, scheme))
     |> Keyword.put_new(:dispatch, cowboy_options[:dispatch] || dispatch_for(plug, opts))
     |> normalize_cowboy_options(scheme)
-    |> to_args()
+    |> to_args(non_keyword_options)
   end
 
   @doc """
@@ -147,8 +150,6 @@ defmodule Plug.Adapters.Cowboy do
 
   ## Helpers
 
-  @http_cowboy_options  [port: 4000]
-  @https_cowboy_options [port: 4040]
   @protocol_options [:timeout, :compress]
 
   defp run(scheme, plug, opts, cowboy_options) do
@@ -168,19 +169,18 @@ defmodule Plug.Adapters.Cowboy do
   end
 
   defp normalize_cowboy_options(cowboy_options, :http) do
-    Keyword.merge @http_cowboy_options, cowboy_options
+    Keyword.put_new cowboy_options, :port, 4000
   end
 
   defp normalize_cowboy_options(cowboy_options, :https) do
     assert_ssl_options(cowboy_options)
-    cowboy_options = Keyword.merge @https_cowboy_options, cowboy_options
+    cowboy_options = Keyword.put_new cowboy_options, :port, 4040
     cowboy_options = Enum.reduce [:keyfile, :certfile, :cacertfile, :dhfile], cowboy_options, &normalize_ssl_file(&1, &2)
     cowboy_options = Enum.reduce [:password], cowboy_options, &to_char_list(&2, &1)
     cowboy_options
   end
 
-  defp to_args(all_opts) do
-    {opts, initial_transport_options} = Enum.partition(all_opts, &is_tuple(&1) and tuple_size(&1) == 2)
+  defp to_args(opts, non_keyword_opts) do
     opts = Keyword.delete(opts, :otp_app)
     {ref, opts} = Keyword.pop(opts, :ref)
     {dispatch, opts} = Keyword.pop(opts, :dispatch)
@@ -196,7 +196,7 @@ defmodule Plug.Adapters.Cowboy do
     }
     |> Map.merge(:maps.from_list(protocol_options ++ extra_options))
 
-    [ref, acceptors, initial_transport_options ++ transport_options, protocol_options]
+    [ref, acceptors, non_keyword_opts ++ transport_options, protocol_options]
   end
 
   defp build_ref(plug, scheme) do
@@ -205,7 +205,7 @@ defmodule Plug.Adapters.Cowboy do
 
   defp dispatch_for(plug, opts) do
     opts = plug.init(opts)
-    [{:_, [ {:_, Plug.Adapters.Cowboy.Handler, {plug, opts}} ]}]
+    [{:_, [{:_, Plug.Adapters.Cowboy.Handler, {plug, opts}}]}]
   end
 
   defp normalize_ssl_file(key, cowboy_options) do

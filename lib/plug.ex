@@ -16,8 +16,8 @@ defmodule Plug do
   A module plug is an extension of the function plug. It is a module that must
   export:
 
-  * a `call/2` function with the signature defined above
-  * an `init/1` function which takes a set of options and initializes it.
+    * a `call/2` function with the signature defined above
+    * an `init/1` function which takes a set of options and initializes it.
 
   The result returned by `init/1` is passed as second argument to `call/2`. Note
   that `init/1` may be called during compilation and as such it must not return
@@ -31,12 +31,14 @@ defmodule Plug do
   Here's an example of a function plug:
 
       def json_header_plug(conn, opts) do
-        conn |> put_resp_content_type("application/json")
+        conn |> Plug.Conn.put_resp_content_type("application/json")
       end
 
   Here's an example of a module plug:
 
       defmodule JSONHeaderPlug do
+        import Plug.Conn
+
         def init(opts) do
           opts
         end
@@ -52,7 +54,7 @@ defmodule Plug do
   pipelines.
   """
 
-  @type opts :: tuple | atom | integer | float | [opts]
+  @type opts :: binary | tuple | atom | integer | float | [opts] | %{opts => opts}
 
   use Application
 
