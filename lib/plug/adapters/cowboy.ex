@@ -139,12 +139,14 @@ defmodule Plug.Adapters.Cowboy do
       :http  -> :start_clear
       :https -> :start_tls
     end
-    {
-      {:ranch_listener_sup, ref},
-      {:cowboy, cowboy_function, [
-        ref, nb_acceptors, trans_opts, proto_opts
-      ]},
-      :permanent, :infinity, :supervisor, [:ranch_listener_sup]
+    cowboy_args = [ref, nb_acceptors, trans_opts, proto_opts]
+    %{
+      id: {:ranch_listener_sup, ref},
+      start: {:cowboy, cowboy_function, cowboy_args},
+      restart: :permanent,
+      shutdown: :infinity,
+      type: :supervisor,
+      modules: [:ranch_listener_sup]
     }
   end
 

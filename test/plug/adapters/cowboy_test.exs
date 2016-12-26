@@ -64,12 +64,12 @@ defmodule Plug.Adapters.CowboyTest do
             %{env: %{dispatch: @dispatch}}]
 
     assert child_spec(:http, __MODULE__, [], []) ==
-           {{:ranch_listener_sup, Plug.Adapters.CowboyTest.HTTP},
-            {:cowboy, :start_clear, args},
-            :permanent,
-            :infinity,
-            :supervisor,
-            [:ranch_listener_sup]}
+           %{id: {:ranch_listener_sup, Plug.Adapters.CowboyTest.HTTP},
+             start: {:cowboy, :start_clear, args},
+             restart: :permanent,
+             shutdown: :infinity,
+             type: :supervisor,
+             modules: [:ranch_listener_sup]}
   end
 
   defmodule MyPlug do
