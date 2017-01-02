@@ -26,9 +26,9 @@ defmodule Plug.Mixfile do
 
   def deps do
     [{:mime, "~> 1.0"},
-     {:ranch, github: "ninenines/ranch", ref: "master", optional: true, override: true},
+     {:ranch, github: "ninenines/ranch", ref: "1.3.0", optional: true, override: true},
      {:cowlib, github: "ninenines/cowlib", ref: "master", optional: true, override: true},
-     {:cowboy, github: "ninenines/cowboy", ref: "master", optional: true},
+     {:cowboy, github: "ninenines/cowboy", ref: "2.0.0-pre.4", optional: true},
      {:ex_doc, "~> 0.12", only: :docs},
      {:inch_ex, ">= 0.0.0", only: :docs},
      {:gun, github: "ninenines/gun", ref: "master", only: :test},
