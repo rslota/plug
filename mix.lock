@@ -1,4 +1,4 @@
-%{"cowboy": {:git, "https://github.com/ninenines/cowboy.git", "c5a9771ac4f7844b61b5e36bfc7eb371a082c560", [ref: "2.0.0-pre.4"]},
+%{"cowboy": {:git, "https://github.com/ninenines/cowboy.git", "1048bff929791f18b7425d9cc7871d78d63cf4f8", [ref: "2.0.0-pre.4"]},
   "cowlib": {:git, "https://github.com/ninenines/cowlib.git", "8e6d0f462850a90bd8a60995f52027839288d038", [ref: "master"]},
   "earmark": {:hex, :earmark, "1.0.3", "89bdbaf2aca8bbb5c97d8b3b55c5dd0cff517ecc78d417e87f1d0982e514557b", [:mix], []},
   "ex_doc": {:hex, :ex_doc, "0.14.5", "c0433c8117e948404d93ca69411dd575ec6be39b47802e81ca8d91017a0cf83c", [:mix], [{:earmark, "~> 1.0", [hex: :earmark, optional: false]}]},
