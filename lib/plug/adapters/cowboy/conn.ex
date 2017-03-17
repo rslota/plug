@@ -33,8 +33,8 @@ defmodule Plug.Adapters.Cowboy.Conn do
   def send_resp(req, status, headers, body) do
     headers = to_headers_map(headers)
     status = Integer.to_string(status) <> " " <> Plug.Conn.Status.reason_phrase(status)
-    :ok = :cowboy_req.reply(status, headers, body, req)
-    {:ok, nil, req}
+    new_req = :cowboy_req.reply(status, headers, body, req)
+    {:ok, nil, new_req}
   end
 
   def send_file(req, status, headers, path, offset, length) do
